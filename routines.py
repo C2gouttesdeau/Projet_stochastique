@@ -40,12 +40,6 @@ def distance_rnm(x_n, y_n, x_m, y_m,l):
             rnm.append(np.linalg.norm(X_n - (X_m + epsilon@L)))
     return min(rnm)
 
-def unit_vector(theta):
-# Fonction qui calcule le vecteur unitaire associé à un angle theta
-    x = np.cos(theta)
-    y = np.sin(theta)
-    return x,y
-
 def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 # Fonction qui calcule les positions et directions des individus à l'instant
 ###
@@ -56,32 +50,28 @@ def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 ###
 # Sortie : x_tfut, y_tfut, theta_tfut : positions et directions à l'instant t+dt vecteurs de taille N
 ###
-
-    # Initialisation des vecteurs
     x_tfut=np.zeros((N,1))
     y_tfut=np.zeros((N,1))
     theta_tfut=np.zeros((N,1))
     
     for i in range(N):
         #Calcul des directions à l'instant t+dt pour la particule i
-        time_init = time.time()
-        arg = 0 + 0*1j
+        arg = []
         for j in range(N): 
-            #on parcourt les particules y compris la i car on ajoute une phase 
-            #et si pas de particule on garde la même direction + var aléatoire
+        #on parcourt les particules y compris la i car si on ajoute une phase 
+        # et si pas de particule on garde la même direction + var aléatoire
             rnm = distance_rnm(x_t[i], y_t[i], x_t[j], y_t[j],l)
             if rnm <= a :   
-                arg = arg + (cos(theta_t[j]) + sin(theta_t[j])*1j)
-        theta_tfut[i] = phase(arg) + eta*var_al_unif()
-        time_end = time.time()
-        print(f"Le temps de calcul de la direction de la particule {i} est {round(time_end-time_init,5)} secondes.")  
+                arg.append(cos(theta_t[j]) + sin(theta_t[j])*1j)
+            theta_tfut[i] = phase(sum(arg)) + eta*random.uniform(-pi,pi)              
         #Calcul des positions à l'instant t+dt pour la particule i
-        time_init = time.time()
-        x_tfut[i] = (x_t[i] + v0*dt*unit_vector(theta_tfut[i])[0]) % l
-        y_tfut[i] = (y_t[i] + v0*dt*unit_vector(theta_tfut[i])[1]) % l  
-        time_end = time.time()
-        print(f"Le temps de calcul de la position de la particule {i} est {round(time_end-time_init,5)} secondes.")
-    return np.array(x_tfut), np.array(y_tfut),np.array(theta_tfut)
+        
+        x_tfut[i] = (x_t[i] + v0*dt*np.cos(theta_tfut[i])) % l
+        y_tfut[i] = (y_t[i] + v0*dt*np.sin(theta_tfut[i])) % l 
+
+
+    return x_tfut, y_tfut,theta_tfut
+
 
 def Solveur(N,l,a,v0,dt,eta,Nt):
 # Fonction qui calcule les positions et directions des individus à chaque instant
@@ -108,6 +98,3 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
         time_end = time.time()
         print(f"Le temps de calcul de la solution à l'itération {i} est {round(time_end-time_init,5)} secondes.")
     return x_sol , y_sol, theta_sol
-
-def var_al_unif():
-    return random.uniform(-pi,pi)

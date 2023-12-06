@@ -17,20 +17,20 @@ from routines import *
 
 ################################### To change ###########################################
 l=10                   #longueur de la boite                                             #
-a=1                    #echelle de longueur                                              #
-N=200                  #nombre de particules                                             #
+a=5                    #echelle de longueur                                              #
+N=20                  #nombre de particules                                             #
 v0 = 0.03              #Vitesse                                                          #
 dt = 1                 #Pas de temps                                                     #
-eta = 0.1              #eta : paramètre d'aléatoire                                      #
+eta = 0.5              #eta : paramètre d'aléatoire                                      #
 Nt = 10                #Nombre d'itérations                                              #
 T = Nt*dt              #Temps final                                                      #
 Simulation_name = "test"  #Nom de la simulation                                          #
 Show_init = False      #True pour afficher les positions initiales dans un graph         #
 Animation = True       #True pour afficher l'animation                                   #
 Save = False           #True pour sauvegarder l'animation                                #
-Trajectoires = False   #True pour afficher les trajectoires (gérer pour N=1)             #
+Trajectoires = True   #True pour afficher les trajectoires (gérer pour N=1)             #
 Background = False     #True pour afficher le fond                                       #
-Animation_infini =False#True pour afficher l'animation avec un nombre infini d'itérations#
+Animation_infini =True #True pour afficher l'animation avec un nombre infini d'itérations#
 #########################################################################################
 
 
