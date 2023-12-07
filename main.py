@@ -17,18 +17,18 @@ from routines import *
 
 ################################### To change ###########################################
 l=10                   #longueur de la boite                                             #
-a=5                    #echelle de longueur                                              #
-N=20                  #nombre de particules                                             #
+a=1                    #echelle de longueur                                              #
+N=50                  #nombre de particules                                             #
 v0 = 0.03              #Vitesse                                                          #
 dt = 1                 #Pas de temps                                                     #
-eta = 0.5              #eta : paramètre d'aléatoire                                      #
-Nt = 10                #Nombre d'itérations                                              #
+eta = 0              #eta : paramètre d'aléatoire                                      #
+Nt = 100                #Nombre d'itérations                                              #
 T = Nt*dt              #Temps final                                                      #
 Simulation_name = "test"  #Nom de la simulation                                          #
-Show_init = False      #True pour afficher les positions initiales dans un graph         #
+Show_init = False      #True pour afficher les positions initiales dans un graphe        #
 Animation = True       #True pour afficher l'animation                                   #
 Save = False           #True pour sauvegarder l'animation                                #
-Trajectoires = True   #True pour afficher les trajectoires (gérer pour N=1)             #
+Trajectoires = False   #True pour afficher les trajectoires (gérer pour N=1)             #
 Background = False     #True pour afficher le fond                                       #
 Animation_infini =True #True pour afficher l'animation avec un nombre infini d'itérations#
 #########################################################################################
@@ -68,7 +68,7 @@ if Animation==True:
 
     if Animation_infini == True :
         x_t, y_t, theta_t = position_direction_init(N,l)
-        scat = ax.scatter(x_t, y_t,marker='o',color='red',zorder=2,s=100)
+        scat = ax.scatter(x_t, y_t,marker='o',color='red',zorder=2,s=75)
         lines = [ax.plot([x], [y], color='grey', linewidth=2, zorder=1)[0] for x, y in zip(x_t, y_t)]
         def animate(i):
             global x_t,y_t,theta_t
@@ -86,7 +86,7 @@ if Animation==True:
                         ydata = np.append(ydata, y_t[j])
                         lines[j].set_data(xdata, ydata)
     else :
-        scat = ax.scatter(x_sol[0], y_sol[0],marker='h',color='red',zorder=2,s=200)
+        scat = ax.scatter(x_sol[0], y_sol[0],marker='o',color='red',zorder=2,s=75)
         # Créer une ligne pour chaque particule
         lines = [ax.plot([x], [y], color='grey', linewidth=2, zorder=1)[0] for x, y in zip(x_sol[0], y_sol[0])]
 
