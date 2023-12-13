@@ -9,7 +9,8 @@ import pandas as pd
 import matplotlib.animation as animation
 import matplotlib.image as mpimg
 import time
-import cmath
+import warnings
+warnings.filterwarnings("ignore")
 
 
 ##### Import files #####
@@ -18,19 +19,18 @@ from routines import *
 ################################### To change ###########################################
 l=10                   #longueur de la boite                                             #
 a=1                    #echelle de longueur                                              #
-N=50                  #nombre de particules                                             #
+N=100                  #nombre de particules                                             #
 v0 = 0.03              #Vitesse                                                          #
 dt = 1                 #Pas de temps                                                     #
-eta = 0              #eta : paramètre d'aléatoire                                      #
-Nt = 100                #Nombre d'itérations                                              #
+eta = 0.2              #eta : paramètre d'aléatoire                                      #
+Nt = 50               #Nombre d'itérations                                              #
 T = Nt*dt              #Temps final                                                      #
-Simulation_name = "test"  #Nom de la simulation                                          #
+name = ("a="+str(a)+"_N="+str(N)
++"_eta="+str(eta)+"_v0="+str(v0)+"_Nt="+str(Nt) )  #Nom de la simulation                                          #
 Show_init = False      #True pour afficher les positions initiales dans un graphe        #
 Animation = True       #True pour afficher l'animation                                   #
-Save = False           #True pour sauvegarder l'animation                                #
+Save = True           #True pour sauvegarder l'animation                                #
 Trajectoires = False   #True pour afficher les trajectoires (gérer pour N=1)             #
-Background = False     #True pour afficher le fond                                       #
-Animation_infini =True #True pour afficher l'animation avec un nombre infini d'itérations#
 #########################################################################################
 
 
@@ -45,67 +45,57 @@ if Show_init==True:
     plt.show()
 
 ###### Calcul de la solution spacio-temporelle #######
-#Calcul de la solution
-if Animation_infini == False :
-    start_time = time.time()
-    x_sol , y_sol, theta_sol = Solveur(N,l,a,v0,dt,eta,Nt) #Calcul des solutions
-    end_time = time.time()
-    print(f"Le temps calcul de la solution est {round(end_time-start_time,2)} secondes.")
 
-#Animation pour vérifier le déplacement des particules
-if Animation==True:        
-    start_time = time.time()
-    fig, ax = plt.subplots()
-    if Background == True : 
-        # Charger l'image
-        img = mpimg.imread('ciel.jpg')
-        # Afficher l'image
-        ax.imshow(img, extent=[0, l, 0, l])
+start_time = time.time()
+x_sol , y_sol, theta_sol = Solveur(N,l,a,v0,dt,eta,Nt) #Calcul des solutions
+end_time = time.time()
+print("==================================")
+print("Simulation pour calculer la solution spacio-temporelle")
+print(f"Le temps calcul de la solution est {round(end_time-start_time,2)} secondes.")
 
-    # Fixer l'échelle de l'axe
-    ax.set_xlim([0, l])
-    ax.set_ylim([0, l])
+###### Mise en place de l'annimation #######
 
-    if Animation_infini == True :
-        x_t, y_t, theta_t = position_direction_init(N,l)
-        scat = ax.scatter(x_t, y_t,marker='o',color='red',zorder=2,s=75)
-        lines = [ax.plot([x], [y], color='grey', linewidth=2, zorder=1)[0] for x, y in zip(x_t, y_t)]
-        def animate(i):
-            global x_t,y_t,theta_t
-            x_t_old, y_t_old = x_t.copy(), y_t.copy()  # Sauvegarder les positions précédentes
-            x_t,y_t,theta_t = update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t)
-            scat.set_offsets(np.c_[x_t, y_t])
-            
-            if Trajectoires==True:
-                # Mettre à jour les données de chaque ligne
-                for j in range(N):
-                    xdata, ydata = lines[j].get_data()
-                    # Vérifier si la particule a traversé la boîte
-                    if np.abs(x_t[j] - x_t_old[j]) < l / 2 and np.abs(y_t[j] - y_t_old[j]) < l / 2:
-                        xdata = np.append(xdata, x_t[j])
-                        ydata = np.append(ydata, y_t[j])
-                        lines[j].set_data(xdata, ydata)
-    else :
-        scat = ax.scatter(x_sol[0], y_sol[0],marker='o',color='red',zorder=2,s=75)
-        # Créer une ligne pour chaque particule
-        lines = [ax.plot([x], [y], color='grey', linewidth=2, zorder=1)[0] for x, y in zip(x_sol[0], y_sol[0])]
+if Animation==True:
+    # Initialisation des paramètres
+    fram = range(0,Nt)
+    inter = 100
+    fig = plt.figure()
 
-        def animate(i):
-            scat.set_offsets(np.c_[x_sol[i], y_sol[i]])
-            
-            if Trajectoires==True:
-                # Mettre à jour les données de chaque ligne
-                for j in range(N):
-                    xdata, ydata = lines[j].get_data()
-                    # Vérifier si la particule a traversé la boîte
-                    if i > 0 and np.sqrt((x_sol[i][j] - x_sol[i-1][j]) ** 2 + (y_sol[i][j] - y_sol[i-1][j]) ** 2) < l / 2:
-                        xdata = np.append(xdata, x_sol[i][j])
-                        ydata = np.append(ydata, y_sol[i][j])
-                        lines[j].set_data(xdata, ydata)
-            
-    ani = animation.FuncAnimation(fig, animate, frames=Nt, interval=50)
-    if Save==True : 
-        ani.save('animation_'+Simulation_name+'.gif', writer='pillow')
+    # Initialisation des positions et graphique
+    x_t, y_t, theta_t = position_direction_init(N,l)
+    scat = plt.scatter(x_t, y_t,marker='o',color='red',zorder=2,s=75)
+    lines = [plt.plot([], [], lw=1,zorder=1)[0] for _ in range(x_sol.shape[1])]
+
+    #Définition de la fonction d'animation (obligatoirement dans le main!!)
+    def anifunc(i):
+    # Fonction animation qui trace les positions des individus à chaque instant et les trajectoire
+    # !!!! Il faut avoir exécuté la fonction Solveur avant !!!!
+
+        x_t = x_sol[i,:]
+        y_t = y_sol[i,:]
+        scat.set_offsets(np.c_[x_t, y_t])
+        if Trajectoires==True:
+            # Mettre à jour les données de chaque ligne
+            for line, x, y in zip(lines, x_t, y_t):
+                # Obtenir les données actuelles de la ligne
+                old_x, old_y = line.get_data()
+                # Si la ligne n'est pas vide et que la distance entre le nouveau point et le dernier point de la ligne est supérieure à l/2
+                if len(old_x) > 0 and np.hypot(x - old_x[-1], y - old_y[-1]) > l/2:
+                    # Réinitialiser la ligne
+                    line.set_data([x], [y])
+                else:
+                    # Ajouter le nouveau point à la ligne
+                    new_x = np.append(old_x, x)
+                    new_y = np.append(old_y, y)
+                    line.set_data(new_x, new_y)
+        plt.xlim(0,l)
+        plt.ylim(0,l)
+        return lines + [scat]
+    def init_func():
+        # Effacer seulement les axes qui contiennent les lignes de trajectoire
+        for line in lines:
+            line.set_data([], [])
+        scat.set_offsets(np.empty((0, 2)))  # Passer un tableau 2D vide à set_offsets
+        return lines + [scat]
+    ani = Gifanim(anifunc,fig,fram,inter,name,Save,init_func)
     plt.show()
-    end_time = time.time()
-    print(f"Le temps de mise en place de l'annimation est {round(end_time-start_time,2)} secondes.")
