@@ -1,3 +1,5 @@
+### Faire la description ####
+
 ##### Import libraries #####
 from math import *
 import numpy as np
@@ -8,15 +10,16 @@ from cmath import *
 import time
 import itertools
 from scipy.spatial import distance
+import matplotlib.animation as animation
+
 
 def position_direction_init(N,l):
 #Fonction qui génère les positions et directions initiales des particules
 ###
-# Entrées :
+# Entrées : N,l (nombre de particules, longueur de la boite) 
 ###
-# N : nombre de particules , l : longueur de la boite
 ###
-# Sortie : x_init, y_init, theta_init : positions et directions initiales vecteurs de taille N
+# Sortie : x_init, y_init, theta_init (positions et directions initiales vecteurs de taille N)
 ###
     x_init = np.random.uniform(0, l, N)
     y_init = np.random.uniform(0, l, N)
@@ -31,6 +34,7 @@ def distance_rnm(x_n, y_n, x_m, y_m,l):
 # x_n, y_n : coordonnées de l'individu n
 # x_m, y_m : coordonnées de l'individu m
 # l : longueur de la boite
+
     # rnm =[]
     # X_n = np.transpose([x_n,y_n]) #vecteur position n
     # X_m = np.transpose([x_m,y_m]) #vecteur position m
@@ -58,30 +62,30 @@ def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 ###
 # Sortie : x_tfut, y_tfut, theta_tfut : positions et directions à l'instant t+dt vecteurs de taille N
 ###
-    indices_rnm = np.eye(N)
-    #calcul la distance matrice de taille NxN
+    indices_rnm = np.eye(N) #initialisation
+
+    #calcul la distance matrice de taille NxN => Matrice de 0 et 1 pour chaque particule
     for i in range(N):
-        args = 0
         for j in range(i+1,N): 
             if distance_rnm(x_t[i], y_t[i], x_t[j], y_t[j],l) <= a:
-                indices_rnm[i,j] = True
-                indices_rnm[j,i] = True
-    # print("indices_rmn\n",indices_rnm)
-    # Matrice de 0 et 1 pour chaque particule
-    lignes_i,collones_j = np.where(indices_rnm==True) 
-    arg = indices_rnm
-    arg[lignes_i,collones_j] = theta_t[collones_j] #np.cos(theta_t[collones_j]) + np.sin(theta_t[collones_j])*1j
-    # print("arg\n",arg)
-    args = np.ma.masked_equal(arg, 0).mean(axis=1)
-    # print("args\n",args)
-    theta_tfut = args + eta*np.random.uniform(-pi,pi,N)
-    # print("theta_tfut\n",theta_tfut)
-    # theta_tfut = theta_t + eta*np.random.uniform(-pi,pi,N)
+                indices_rnm[i,j] = 1
+                indices_rnm[j,i] = 1
 
+    #Récupération des indices 
+    lignes_i,collones_j = np.where(indices_rnm==1)
+
+    #Transforamtion de la matrice indices_rmn en une matrice contenant les angles des particules concernées
+    indices_rnm[lignes_i,collones_j] = theta_t[collones_j]
+
+    #Transformation en un vecteur contenant les moyennes des angles pour chaque ligne
+    arg = np.ma.masked_equal(indices_rnm, 0).mean(axis=1)
+
+    #Transformation en theta_tfut
+    theta_tfut = arg + eta*np.random.uniform(-pi,pi,N)
+ 
     #Calcul des positions à l'instant t+dt pour la particule i
     x_tfut= (x_t + v0*dt*np.cos(theta_tfut)) % l
     y_tfut= (y_t + v0*dt*np.sin(theta_tfut)) % l 
-
 
     return x_tfut, y_tfut,theta_tfut
 
@@ -102,12 +106,14 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
     theta_sol = theta_t.reshape(1, -1)
 
     for i in range(Nt-1):
-        time_init = time.time() 
         x_t, y_t, theta_t = update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t)
         # Ajout des vecteurs aux matrices
         x_sol = np.vstack((x_sol, x_t.reshape(1, -1)))
         y_sol = np.vstack((y_sol, y_t.reshape(1, -1)))
         theta_sol = np.vstack((theta_sol, theta_t.reshape(1, -1)))
-        time_end = time.time()
-        print(f"Le temps de calcul de la solution à l'itération {i+1} est {round(time_end-time_init,5)} secondes.")
+
     return x_sol , y_sol, theta_sol
+
+def Phi(N,theta_t):
+    return 1/N*np.abs(np.sum(np.exp(theta_t*1j),axis=1))
+
