@@ -79,7 +79,8 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
 # v0,dt,eta,Nt :vitesse, pas de temps, paramètre de bruit, nombre d'itérations
 ###
 # Sortie : x_sol, y_sol, theta_sol : positions et directions à chaque instant matrice de taille Nt*N
-
+    print("==================================")
+    print("Simulation pour calculer la solution spacio-temporelle")
     x_t, y_t, theta_t = position_direction_init(N,l) #initialisation
     x_sol = x_t.reshape(1, -1)
     y_sol = y_t.reshape(1, -1)
@@ -93,9 +94,60 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
         theta_sol = np.vstack((theta_sol, theta_t.reshape(1, -1)))
     return x_sol , y_sol, theta_sol
 
-def Gifanim(anifunc,fig,fram,inter,name,Save,init_func):
-# Fonction qui crée un gif animé
+def Calc_var_f(f):
+    var_f = np.zeros(len(f))
+    for i in range(1,len(f)):
+        var_f[i]=np.var(f[:(i)])
+    return var_f
 
+def Calc_Phi(N,theta_t):
+# Fonction qui calcule la moyenne des directions des individus à l'instant t
+###
+# Entrées : N : nombre d'individus, theta_t : Matrice de taille Nt*N
+###
+# Sortie : Phi_t, Var_phi_t : 
+###
+    phi = 1/N*np.abs(np.sum(np.exp(theta_t*1j),axis=1))
+    Var_phi = Calc_var_f(phi)
+    return phi, Var_phi
+
+def AnimationGif(x_sol,y_sol,N,l,Nt,inter,name,Trajectoires,Save):
+    # Initialisation des paramètres
+    fram = range(0,Nt)
+    fig = plt.figure("Animation")
+    # Initialisation graphique
+    scat = plt.scatter([], [],marker='o',color='red',zorder=2,s=75)
+    lines = [plt.plot([], [], lw=1,zorder=1)[0] for _ in range(x_sol.shape[1])]
+    #Définition de la fonction d'animation
+    def anifunc(i):
+    # Fonction animation qui trace les positions des individus à chaque instant et les trajectoire
+    # !!!! Il faut avoir exécuté la fonction Solveur avant !!!!
+        x_t = x_sol[i,:]
+        y_t = y_sol[i,:]
+        scat.set_offsets(np.c_[x_t, y_t])
+        if Trajectoires==True:
+            # Mettre à jour les données de chaque ligne
+            for line, x, y in zip(lines, x_t, y_t):
+                # Obtenir les données actuelles de la ligne
+                old_x, old_y = line.get_data()
+                # Si la ligne n'est pas vide et que la distance entre le nouveau point et le dernier point de la ligne est supérieure à l/2
+                if len(old_x) > 0 and np.hypot(x - old_x[-1], y - old_y[-1]) > l/2:
+                    # Réinitialiser la ligne
+                    line.set_data([x], [y])
+                else:
+                    # Ajouter le nouveau point à la ligne
+                    new_x = np.append(old_x, x)
+                    new_y = np.append(old_y, y)
+                    line.set_data(new_x, new_y)
+        plt.xlim(0,l)
+        plt.ylim(0,l)
+        return lines + [scat]
+    def init_func():
+        # Effacer seulement les axes qui contiennent les lignes de trajectoire
+        for line in lines:
+            line.set_data([], [])
+        scat.set_offsets(np.empty((0, 2)))  # Passer un tableau 2D vide à set_offsets
+        return lines + [scat]
     ani = animation.FuncAnimation(fig, anifunc, frames=fram, interval=inter,repeat=True,init_func=init_func)
     namegif= name +".gif"
     print("==================================")
