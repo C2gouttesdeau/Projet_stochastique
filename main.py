@@ -19,7 +19,7 @@ from routines import *
 ################################### To change ###########################################
 l=10                   #longueur de la boite                                             #
 a=1                    #echelle de longueur                                              #
-N=800                  #nombre de particules                                             #
+N=100                  #nombre de particules                                             #
 v0 = 0.3              #Vitesse                                                           #
 dt = 1                 #Pas de temps                                                     #
 eta = 0.2              #eta : paramètre d'aléatoire                                      #
