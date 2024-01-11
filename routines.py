@@ -22,7 +22,7 @@ def position_direction_init(N,l):
     theta_init = np.random.uniform(0, 2*np.pi, N)
     return x_init, y_init, theta_init
 
-def distance_rnm(x_n, y_n, x_m, y_m,l):
+def distance_rnm_perio(x_n, y_n, x_m, y_m,l):
 # Fonction qui calcule la distance entre les individus n et m
 # x_n, y_n : coordonnées de l'individu n
 # x_m, y_m : coordonnées de l'individu m
@@ -34,6 +34,16 @@ def distance_rnm(x_n, y_n, x_m, y_m,l):
     X_m_offsets = X_m[None, :] + offsets @ L[:, None]
     distances = distance.cdist([X_n], X_m_offsets)
     return np.min(distances)
+
+def distance_rnm(x_n, y_n, x_m, y_m,l):
+# Fonction qui calcule la distance entre les individus n et m
+# x_n, y_n : coordonnées de l'individu n
+# x_m, y_m : coordonnées de l'individu m
+# l : longueur de la boite
+    X_n = np.array([x_n, y_n])
+    X_m = np.array([x_m, y_m])
+    return distance.euclidean(X_n, X_m)
+
 
 def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 # Fonction qui calcule les positions et directions des individus à l'instant
@@ -49,8 +59,15 @@ def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
     #calcul la distance matrice de taille NxN
     for i in range(N):
         args = 0
-        for j in range(i+1,N): 
-            if distance_rnm(x_t[i], y_t[i], x_t[j], y_t[j],l) <= a:
+        for j in range(i+1,N):
+            #Calcul de la distance entre les particules i et j
+            # #si la particule est dans une boite de largeur l-2*a centré en (l/2,l/2)
+            # if x_t[i]<a or y_t[i]<a or x_t[i]>l-a or y_t[i]>l-a:    
+            #     dist = distance_rnm_perio(x_t[i], y_t[i], x_t[j], y_t[j],l)
+            # else: 
+            #     dist = distance_rnm(x_t[i], y_t[i], x_t[j], y_t[j],l)
+            dist = distance_rnm_perio(x_t[i], y_t[i], x_t[j], y_t[j],l)
+            if dist <= a:
                 indices_rnm[i,j] = 1
                 indices_rnm[j,i] = 1
     
@@ -82,23 +99,43 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
     print("==================================")
     print("Simulation pour calculer la solution spacio-temporelle")
     x_t, y_t, theta_t = position_direction_init(N,l) #initialisation
-    x_sol = x_t.reshape(1, -1)
-    y_sol = y_t.reshape(1, -1)
-    theta_sol = theta_t.reshape(1, -1)
+    x_sol = np.zeros((Nt,N))
+    y_sol = np.zeros((Nt,N))
+    theta_sol = np.zeros((Nt,N))
 
     for i in tqdm(range(Nt-1)):
         x_t, y_t, theta_t = update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t)
-        # Ajout des vecteurs aux matrices
-        x_sol = np.vstack((x_sol, x_t.reshape(1, -1)))
-        y_sol = np.vstack((y_sol, y_t.reshape(1, -1)))
-        theta_sol = np.vstack((theta_sol, theta_t.reshape(1, -1)))
+        #Ajout des vecteurs aux matrices
+        x_sol[i,:] = x_t
+        y_sol[i,:] = y_t
+        theta_sol[i,:] = theta_t
     return x_sol , y_sol, theta_sol
 
-def Calc_var_f(f):
-    var_f = np.zeros(len(f))
-    for i in range(1,len(f)):
-        var_f[i]=np.var(f[:(i)])
-    return var_f
+def Calc_var_f(f,axis_nb):
+    if axis_nb == 1:
+        t = np.arange(0,len(f))
+        var_f = np.zeros(len(f))
+        for i in range(1,len(f)):
+            var_f[i]=np.var(f[:(i)])
+    if axis_nb == 2 :
+        t = np.arange(0,np.shape(f)[0])
+        var_f = np.zeros(np.shape(f)[0])
+        for i in range(1,np.shape(f)[0]):
+            var_f[i]=np.var(np.mean(f[:(i+1),:]-f[0,:],axis=1))
+    return var_f,t
+
+def Calc_mean_f(f,axis_nb):
+    if axis_nb == 1:
+        t = np.np.arange(0,len(f))
+        mean_f = np.zeros(len(f))
+        for i in range(1,len(f)):
+            mean_f[i]=np.mean(f[:(i)])
+    if axis_nb == 2 :
+        t = np.arange(0,np.shape(f)[0])
+        mean_f = np.zeros(np.shape(f)[0])
+        for i in range(0,np.shape(f)[0]):
+            mean_f[i]=np.mean(np.mean(f[:(i+1),:]-f[0,:],axis=1))
+    return mean_f,t
 
 def Calc_Phi(N,theta_t):
 # Fonction qui calcule la moyenne des directions des individus à l'instant t
@@ -108,16 +145,10 @@ def Calc_Phi(N,theta_t):
 # Sortie : Phi_t, Var_phi_t : 
 ###
     phi = 1/N*np.abs(np.sum(np.exp(theta_t*1j),axis=1))
-    Var_phi = Calc_var_f(phi)
-    return phi, Var_phi
+    Var_phi,t = Calc_var_f(phi,1)
+    return phi, Var_phi,t
 
-def AnimationGif(x_sol,y_sol,N,l,Nt,inter,name,Trajectoires,Save):
-    # Initialisation des paramètres
-    fram = range(0,Nt)
-    fig = plt.figure("Animation")
-    # Initialisation graphique
-    scat = plt.scatter([], [],marker='o',color='red',zorder=2,s=75)
-    lines = [plt.plot([], [], lw=1,zorder=1)[0] for _ in range(x_sol.shape[1])]
+def AnimationGif(x_sol,y_sol,N,l,Nt,inter,fram,fig,scat,lines,name,Trajectoires,Save):
     #Définition de la fonction d'animation
     def anifunc(i):
     # Fonction animation qui trace les positions des individus à chaque instant et les trajectoire
