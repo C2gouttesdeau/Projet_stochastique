@@ -7,6 +7,7 @@ from cmath import *
 from scipy.spatial import distance
 import matplotlib.animation as animation
 from tqdm import tqdm
+from scipy.spatial.distance import cdist
 
 def position_direction_init(N,l):
 #Fonction qui génère les positions et directions initiales des particules
@@ -22,28 +23,50 @@ def position_direction_init(N,l):
     theta_init = np.random.uniform(0, 2*np.pi, N)
     return x_init, y_init, theta_init
 
-def distance_rnm_perio(x_n, y_n, x_m, y_m,l):
-# Fonction qui calcule la distance entre les individus n et m
-# x_n, y_n : coordonnées de l'individu n
-# x_m, y_m : coordonnées de l'individu m
-# l : longueur de la boite
-    X_n = np.array([x_n, y_n])
-    X_m = np.array([x_m, y_m])
+def distance_indice_matrix(x_t,y_t,l,N,a):
+#Fonction qui renvoie une matrice de 0 et de 1
+# 1 si les particule (i,j) de la matrices sont à une distance inférieur à a
+# 0 sinon 
+    indice_dist = np.eye(N) #les particules sont à une ditance nul d'elles même 
     L = np.array([l, l])
-    offsets = np.array([[i, j] for i in [-1, 0, 1] for j in [-1, 0, 1]])
-    X_m_offsets = X_m[None, :] + offsets @ L[:, None]
-    distances = distance.cdist([X_n], X_m_offsets)
-    return np.min(distances)
+    for i in range(N):
+        X_i= np.array([x_t[i], y_t[i]])
+        for j in range(i+1,N):
+            X_j = np.array([x_t[j], y_t[j]])
+            # if x_t[i]>=a and x_t[i]<=(l-a) and y_t[i]>=a and y_t[i]<=(l-a): 
+            #     dist = distance.euclidean(X_i,X_j)
+            # else:
+            offsets = np.array([[w, k] for w in [-1, 0, 1] for k in [-1, 0, 1]])
+            X_j_offsets = X_j+offsets*l
+            distances = distance.cdist([X_i], X_j_offsets)    
+            dist = np.min(distances)
+            if dist<=a:
+                indice_dist[i,j] = 1
+                indice_dist[j,i] = 1
+    return indice_dist
 
-def distance_rnm(x_n, y_n, x_m, y_m,l):
-# Fonction qui calcule la distance entre les individus n et m
-# x_n, y_n : coordonnées de l'individu n
-# x_m, y_m : coordonnées de l'individu m
-# l : longueur de la boite
-    X_n = np.array([x_n, y_n])
-    X_m = np.array([x_m, y_m])
-    return distance.euclidean(X_n, X_m)
+def distance_indice_matrix_vectorized(x_t, y_t, l, N, a):
+    # Créer une matrice de coordonnées
+    coords = np.column_stack((x_t, y_t))
 
+    # Créer une matrice 3D pour stocker toutes les distances possibles
+    distances = np.zeros((N, N, 9))
+
+    # Calculer les distances pour chaque offset
+    offsets = np.array([[w, k] for w in [-1, 0, 1] for k in [-1, 0, 1]])
+    for idx, offset in enumerate(offsets):
+        coords_offsets = coords + offset * l
+        distances[:, :, idx] = cdist(coords, coords_offsets)
+
+    # Trouver la distance minimale pour chaque paire de particules
+    min_distances = np.min(distances, axis=2)
+
+    # Créer une matrice de 0 et de 1 en fonction de si la distance est inférieure à a ou pas
+    indice_dist = (min_distances <= a)
+    # Les particules sont à une distance nulle d'elles-mêmes
+    np.fill_diagonal(indice_dist, True)
+
+    return indice_dist.astype(float)
 
 def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 # Fonction qui calcule les positions et directions des individus à l'instant
@@ -55,25 +78,10 @@ def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 ###
 # Sortie : x_tfut, y_tfut, theta_tfut : positions et directions à l'instant t+dt vecteurs de taille N
 ###
-    indices_rnm = np.eye(N)
-    #calcul la distance matrice de taille NxN
-    for i in range(N):
-        args = 0
-        for j in range(i+1,N):
-            #Calcul de la distance entre les particules i et j
-            # #si la particule est dans une boite de largeur l-2*a centré en (l/2,l/2)
-            # if x_t[i]<a or y_t[i]<a or x_t[i]>l-a or y_t[i]>l-a:    
-            #     dist = distance_rnm_perio(x_t[i], y_t[i], x_t[j], y_t[j],l)
-            # else: 
-            #     dist = distance_rnm(x_t[i], y_t[i], x_t[j], y_t[j],l)
-            dist = distance_rnm_perio(x_t[i], y_t[i], x_t[j], y_t[j],l)
-            if dist <= a:
-                indices_rnm[i,j] = 1
-                indices_rnm[j,i] = 1
-    
+    indice_dist = distance_indice_matrix_vectorized(x_t,y_t,l,N,a)
     # Matrice de 0 et 1 pour chaque particule
-    lignes_i,collones_j = np.where(indices_rnm==1) 
-    arg = indices_rnm
+    lignes_i,collones_j = np.where(indice_dist==True) 
+    arg = indice_dist
     #Crétion de arg une matrice de taille NxN avec les angles de theta_t des particule qui sont à une distance inférieur à a
     arg[lignes_i,collones_j] = theta_t[collones_j]
     #Création d'un vecteur contenant les moyennes sur les lignes de arg (sans les prendre en compte les 0)
@@ -111,33 +119,35 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
         theta_sol[i,:] = theta_t
     return x_sol , y_sol, theta_sol
 
-def Calc_var_f(f,axis_nb):
-    if axis_nb == 1:
-        t = np.arange(0,len(f))
-        var_f = np.zeros(len(f))
-        for i in range(1,len(f)):
-            var_f[i]=np.var(f[:(i)])
-    if axis_nb == 2 :
-        t = np.arange(0,np.shape(f)[0])
-        var_f = np.zeros(np.shape(f)[0])
-        for i in range(1,np.shape(f)[0]):
-            var_f[i]=np.var(np.mean(f[:(i+1),:]-f[0,:],axis=1))
-    return var_f,t
+# def Calc_var_f(f,axis_nb):
+#     if axis_nb == 1:
+#         t = np.arange(0,len(f))
+#         var_f = np.zeros(len(f))
+#         for i in range(1,len(f)):
+#             var_f[i]=np.var(f[:(i)])
+#     if axis_nb == 2 :
+#         t = np.arange(0,np.shape(f)[0])
+#         var_f = np.zeros(np.shape(f)[0])
+#         for i in range(1,np.shape(f)[0]):
+#             var_f[i]=np.var(np.mean(f[:(i+1),:]-f[0,:],axis=1))
+#     return var_f,t
 
-def Calc_mean_f(f,axis_nb):
-    if axis_nb == 1:
-        t = np.np.arange(0,len(f))
-        mean_f = np.zeros(len(f))
-        for i in range(1,len(f)):
-            mean_f[i]=np.mean(f[:(i)])
-    if axis_nb == 2 :
-        t = np.arange(0,np.shape(f)[0])
-        mean_f = np.zeros(np.shape(f)[0])
-        for i in range(0,np.shape(f)[0]):
-            mean_f[i]=np.mean(np.mean(f[:(i+1),:]-f[0,:],axis=1))
-    return mean_f,t
+def Calc_var_vec(vec,T,dt):
+    t = np.arange(0,T,dt)
+    var_vec = np.zeros(len(t))
+    for i in range(len(t)):
+        var_vec[i] = np.mean(np.var(vec[:(i+1),:]-vec[0,:],axis=0))
+    return var_vec,t
 
-def Calc_Phi(N,theta_t):
+def Calc_mean_vec(vec,T,dt):
+    t = np.arange(0,T,dt)
+    mean_vec = np.mean(vec-vec[0,:],axis=1)
+    mean_mean_vec = np.zeros(len(t))
+    for i in range(len(t)):
+        mean_mean_vec[i] = np.mean(mean_vec[:(i+1)])
+    return mean_vec,mean_mean_vec,t
+
+def Calc_Phi(theta_t,N,T,dt):
 # Fonction qui calcule la moyenne des directions des individus à l'instant t
 ###
 # Entrées : N : nombre d'individus, theta_t : Matrice de taille Nt*N
@@ -145,8 +155,8 @@ def Calc_Phi(N,theta_t):
 # Sortie : Phi_t, Var_phi_t : 
 ###
     phi = 1/N*np.abs(np.sum(np.exp(theta_t*1j),axis=1))
-    Var_phi,t = Calc_var_f(phi,1)
-    return phi, Var_phi,t
+    Mean_phi,t = [np.mean(phi[:(i+1)]) for i in range(len(phi))],np.arange(0,T,dt)
+    return phi, Mean_phi,t
 
 def AnimationGif(x_sol,y_sol,N,l,Nt,inter,fram,fig,scat,lines,name,Trajectoires,Save):
     #Définition de la fonction d'animation
