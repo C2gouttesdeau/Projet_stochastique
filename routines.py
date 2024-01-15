@@ -95,7 +95,7 @@ def update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t):
 
     return x_tfut, y_tfut,theta_tfut
 
-def Solveur(N,l,a,v0,dt,eta,Nt):
+def Solveur(N,l,a,v0,dt,eta,Nt,coef_dir_limit,Auto_stop):
 # Fonction qui calcule les positions et directions des individus à chaque instant
 ###
 # Entrées :
@@ -117,7 +117,13 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
         x_sol[i,:] = x_t
         y_sol[i,:] = y_t
         theta_sol[i,:] = theta_t
-    return x_sol , y_sol, theta_sol
+        if Auto_stop == True:
+            if i>20 and i%20==0:
+                phi,mean_phi,t = Calc_Phi(theta_sol,np.shape(theta_sol)[1],dt)
+                if is_almost_constant(mean_phi, t, coef_dir_limit):
+                    indice_stop = i
+                    break
+    return x_sol , y_sol, theta_sol, indice_stop
 
 # def Calc_var_f(f,axis_nb):
 #     if axis_nb == 1:
@@ -132,29 +138,33 @@ def Solveur(N,l,a,v0,dt,eta,Nt):
 #             var_f[i]=np.var(np.mean(f[:(i+1),:]-f[0,:],axis=1))
 #     return var_f,t
 
-def Calc_var_vec(vec,T,dt):
+def Calc_var_vec(vec,dt):
+    T = np.shape(vec)[0]
     t = np.arange(0,T,dt)
-    var_vec = np.zeros(len(t))
-    for i in range(len(t)):
-        var_vec[i] = np.mean(np.var(vec[:(i+1),:]-vec[0,:],axis=0))
-    return var_vec,t
+    # var_vec = np.zeros(len(t))
+    # for i in range(len(t)):
+    #     var_vec[i] = np.mean(np.var(vec[:(i+1),:]-vec[0,:],axis=0))
+    var_vec = np.mean((vec - vec[0, :])**2, axis=1)
+    return var_vec[:-1],t[:-1]
 
-def Calc_mean_vec(vec,T,dt):
+def Calc_mean_vec(vec,dt):
+    T = np.shape(vec)[0]
     t = np.arange(0,T,dt)
     mean_vec = np.mean(vec-vec[0,:],axis=1)
     mean_mean_vec = np.zeros(len(t))
     for i in range(len(t)):
         mean_mean_vec[i] = np.mean(mean_vec[:(i+1)])
-    return mean_vec,mean_mean_vec,t
+    return mean_vec[:-1],mean_mean_vec[:-1],t[:-1]
 
-def Calc_Phi(theta_t,N,T,dt):
+def Calc_Phi(theta_t,N,dt):
 # Fonction qui calcule la moyenne des directions des individus à l'instant t
 ###
 # Entrées : N : nombre d'individus, theta_t : Matrice de taille Nt*N
 ###
 # Sortie : Phi_t, Var_phi_t : 
 ###
-    phi = 1/N*np.abs(np.sum(np.exp(theta_t*1j),axis=1))
+    T = np.shape(theta_t)[0]
+    phi = 1/N*abs(np.sum(np.exp(theta_t*1j),axis=1))
     Mean_phi,t = [np.mean(phi[:(i+1)]) for i in range(len(phi))],np.arange(0,T,dt)
     return phi, Mean_phi,t
 
@@ -167,19 +177,21 @@ def AnimationGif(x_sol,y_sol,N,l,Nt,inter,fram,fig,scat,lines,name,Trajectoires,
         y_t = y_sol[i,:]
         scat.set_offsets(np.c_[x_t, y_t])
         if Trajectoires==True:
-            # Mettre à jour les données de chaque ligne
-            for line, x, y in zip(lines, x_t, y_t):
-                # Obtenir les données actuelles de la ligne
-                old_x, old_y = line.get_data()
-                # Si la ligne n'est pas vide et que la distance entre le nouveau point et le dernier point de la ligne est supérieure à l/2
-                if len(old_x) > 0 and np.hypot(x - old_x[-1], y - old_y[-1]) > l/2:
-                    # Réinitialiser la ligne
-                    line.set_data([x], [y])
-                else:
-                    # Ajouter le nouveau point à la ligne
-                    new_x = np.append(old_x, x)
-                    new_y = np.append(old_y, y)
-                    line.set_data(new_x, new_y)
+            # Mettre à jour les données de la première ligne seulement
+            line = lines[0]
+            x = x_t[0]
+            y = y_t[0]
+            # Obtenir les données actuelles de la ligne
+            old_x, old_y = line.get_data()
+            # Si la ligne n'est pas vide et que la distance entre le nouveau point et le dernier point de la ligne est supérieure à l/2
+            if len(old_x) > 0 and np.hypot(x - old_x[-1], y - old_y[-1]) > l/2:
+                # Réinitialiser la ligne
+                line.set_data([x], [y])
+            else:
+                # Ajouter le nouveau point à la ligne
+                new_x = np.append(old_x, x)
+                new_y = np.append(old_y, y)
+                line.set_data(new_x, new_y)
         plt.xlim(0,l)
         plt.ylim(0,l)
         return lines + [scat]
@@ -198,3 +210,14 @@ def AnimationGif(x_sol,y_sol,N,l,Nt,inter,fram,fig,scat,lines,name,Trajectoires,
         print('Gif animé sauvegardé :',namegif)
     print("Gif animé créé :",namegif)
     return ani
+
+def is_almost_constant(phi, t, slope_threshold):
+    # Ignorer les 20 premières valeurs
+    phi = phi[20:]
+    t = t[20:]
+
+    # Effectuer une régression linéaire
+    slope, intercept = np.polyfit(t, phi, 1)
+
+    # Vérifier si le coefficient directeur est inférieur à la valeur spécifiée
+    return np.abs(slope) <= slope_threshold
