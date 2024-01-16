@@ -110,6 +110,7 @@ def Solveur(N,l,a,v0,dt,eta,Nt,coef_dir_limit,Auto_stop):
     x_sol = np.zeros((Nt,N))
     y_sol = np.zeros((Nt,N))
     theta_sol = np.zeros((Nt,N))
+    indice_stop = Nt-1
 
     for i in tqdm(range(Nt-1)):
         x_t, y_t, theta_t = update_position_direction(N,l,a,v0,dt,eta,x_t,y_t,theta_t)
@@ -144,13 +145,19 @@ def Calc_var_vec(vec,dt):
     # var_vec = np.zeros(len(t))
     # for i in range(len(t)):
     #     var_vec[i] = np.mean(np.var(vec[:(i+1),:]-vec[0,:],axis=0))
-    var_vec = np.mean((vec - vec[0, :])**2, axis=1)
-    return var_vec[:-1],t[:-1]
+    var_vec = np.mean((vec-vec[0,:])**2, axis=1)
+    # var_vec = np.mean(vec - np.mean(vec,axis=0)**2, axis=1)
+    mean_var_vec = np.zeros(len(t))
+    for i in range(len(t)):
+        mean_var_vec[i] = np.mean(var_vec[:(i+1)])
+    return var_vec[:-1],mean_var_vec[:-1],t[:-1]
 
 def Calc_mean_vec(vec,dt):
-    T = np.shape(vec)[0]
+    dvec = np.diff(vec, axis=0)
+    T = np.shape(dvec)[0]
     t = np.arange(0,T,dt)
-    mean_vec = np.mean(vec-vec[0,:],axis=1)
+    mean_vec = np.mean(dvec,axis=1)
+    # mean_vec = np.mean(vec-np.mean(vec,axis=0),axis=1)
     mean_mean_vec = np.zeros(len(t))
     for i in range(len(t)):
         mean_mean_vec[i] = np.mean(mean_vec[:(i+1)])

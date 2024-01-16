@@ -75,19 +75,30 @@ for N,eta in zip(N,eta):
         plt.xlabel("Temps");plt.ylabel("Phi")
         plt.legend()
         if Save == True:
-            plt.savefig("Phi"+name+".png")
+            plt.savefig("Phi_"+name+".png")
+        if Show_Analyse == True:
+            plt.show()
+        else:
+            plt.close()
         
         #Calcul de la variance et affichage
-        var_xt,tx = routines.Calc_var_vec(x_sol,dt)
-        var_yt,ty = routines.Calc_var_vec(y_sol,dt)
-        plt.figure();plt.plot(tx,var_xt,label="var_xt")
+        var_xt,mean_varxt,tx = routines.Calc_var_vec(x_sol,dt)
+        var_yt,mean_varyt,ty = routines.Calc_var_vec(y_sol,dt)
+        plt.figure()
+        plt.plot(tx,var_xt,label="var_xt")
         plt.plot(ty,var_yt,label="var_yt")
+        plt.plot(tx,mean_varxt,label="mean_varxt")
+        plt.plot(ty,mean_varyt,label="mean_varyt")
         plt.xlim(0)
         plt.xlabel("Temps")
         plt.ylabel("Variance")
         plt.legend()
         if Save == True:
-            plt.savefig("var"+name+".png")
+            plt.savefig("var_"+name+".png")
+        if Show_Analyse == True:
+            plt.show()
+        else:
+            plt.close()
 
         #Calcul de la moyenne et affichage
         mean_xt,mean_mean_xt,tx = routines.Calc_mean_vec(x_sol,dt)
@@ -101,8 +112,7 @@ for N,eta in zip(N,eta):
         plt.xlim(0)
         plt.legend()
         if Save == True:
-            plt.savefig("mean"+name+".png")
-
+            plt.savefig("mean_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
