@@ -24,7 +24,7 @@ Pour exécuter le programme exécuter le fichier `exploitation.py` dans un envir
 
 - `Animation` ce booléen permet de créer l'annimation des postions des particules au court du temps.
 - `Trajectoires` ce boléen permet d'afficher la trajectoire d'une des particules au court du temps dans l'annimation
--`Analyse` ce booléen permet de réaliser l'analyse de la simulation avec la mise en place de plusieurs affichage d'écrit ci-après.
+- `Analyse` ce booléen permet de réaliser l'analyse de la simulation avec la mise en place de plusieurs affichage d'écrit ci-après.
 - `Save` ce booléen permet de sauvegarder toute les données, graphique et animation de la simulation. Ces données sont enregistré dans un dossier portant le nom de la simualtion (valeurs des paramètre). 
 
 - `Auto_stop` ce booléen permet d'arrêter automatique la silation l'orsque que la fonction `Phi`(d'écrite dans le sujet) est constante en moyenne.
