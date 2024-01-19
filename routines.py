@@ -186,7 +186,7 @@ def Calc_var_vec(vec,dt):
         mean_var_vec[i] = np.mean(var_vec[:(i+1)])
     return var_vec[:-1],mean_var_vec[:-1],t[:-1]
 
-def Calc_baricentre(x,y):
+def Calc_barycentre(x,y):
     N = np.shape(x)[1]
     n = np.arange(0,N)
     barycentre_x = np.mean(x,axis=0)-x[0,:]

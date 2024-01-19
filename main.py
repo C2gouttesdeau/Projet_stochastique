@@ -13,6 +13,7 @@ import warnings
 warnings.filterwarnings("ignore")
 from IPython.display import HTML,display
 import os
+import shutil
 
 ##### Import files #####
 import routines
@@ -26,6 +27,8 @@ for N,eta in zip(N,eta):
     print("==================================")
 
     size = (-(SizeMax-10)/Nmax)*N + SizeMax       #Taille des points 
+    if N>Nmax : 
+        size =10
     ##### Initialisation #####
     x_init, y_init, theta_init = routines.position_direction_init(N,l)
     #Affichage des positions initiales
@@ -54,6 +57,7 @@ for N,eta in zip(N,eta):
             shutil.rmtree(name)
         os.makedirs(name)
         os.chdir(name)
+        print('==================================')
         print("Sauvegarde dans le dossier : ",name)
     
     ###### Sauvegarde des données #######
@@ -145,8 +149,8 @@ for N,eta in zip(N,eta):
         sum_ux,sum_uy,mean_somme_ux,mean_somme_uy,norm,mean_norm,dir,mean_dir,t = routines.Calc_somme_vec_vitesse(theta_sol,dt)
         plt.figure("Vitesse résulatante")
         plt.plot(t,sum_ux,label="sum_ux")
-        plt.plot(t,mean_somme_ux,label="mean_sum_ux")
         plt.plot(t,sum_uy,label="sum_uy")
+        plt.plot(t,mean_somme_ux,label="mean_sum_ux")
         plt.plot(t,mean_somme_uy,label="mean_sum_uy")
         plt.xlim(0)
         plt.xlabel("Temps");plt.ylabel("Somme vitesse")
@@ -157,18 +161,18 @@ for N,eta in zip(N,eta):
             plt.show()
         else:
             plt.close()
-        #Calcul baricentre et affichage
-        x_bari,y_bari,mean_barycentre_x,mean_barycentre_y,n = routines.Calc_baricentre(x_sol,y_sol)
-        plt.figure("Baricentre")
+        #Calcul barycentre et affichage
+        x_bari,y_bari,mean_barycentre_x,mean_barycentre_y,n = routines.Calc_barycentre(x_sol,y_sol)
+        plt.figure("barycentre")
         plt.plot(n,x_bari,label="x_bari")
         plt.plot(n,y_bari,label="y_bari")
         plt.plot(n,mean_barycentre_x,label="mean_x_bari")
         plt.plot(n,mean_barycentre_y,label="mean_y_bari")
-        plt.xlabel("Particule N°");plt.ylabel("Baricentre - position_initiale")
+        plt.xlabel("Particule N°");plt.ylabel("barycentre - position_initiale")
         plt.xlim(0)
         plt.legend()
         if Save == True:
-            plt.savefig("Baricentre_"+name+".png")
+            plt.savefig("barycentre_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
@@ -176,9 +180,17 @@ for N,eta in zip(N,eta):
         #deplacement quadratique moyen
         deplacement_quad_moyen_x,tx = routines.deplacement_quad_mean(x_sol,dt)
         deplacement_quad_moyen_y,ty = routines.deplacement_quad_mean(y_sol,dt)
+
+        coefs_Dx = np.polyfit(tx[:-1], deplacement_quad_moyen_x[:-1], 1)
+        coefs_Dy = np.polyfit(ty[:-1], deplacement_quad_moyen_y[:-1], 1)
+        p_Dx = np.poly1d(coefs_Dx)
+        p_Dy = np.poly1d(coefs_Dy)
+        equation_Dx = f"{coefs_Dx[0]:f}t + {coefs_Dx[1]:.5f}"
+        equation_Dy = f"{coefs_Dy[0]:f}t + {coefs_Dy[1]:.5f}"
+
         plt.figure("Deplacement quadratique moyen")
-        plt.plot(tx[:-1],deplacement_quad_moyen_x[:-1],label="deplacement_quad_moyen_x")
-        plt.plot(ty[:-1],deplacement_quad_moyen_y[:-1],label="deplacement_quad_moyen_y")
+        plt.plot(tx[:-1],deplacement_quad_moyen_x[:-1],label="deplacement_quad_moyen_x = "+equation_Dx)
+        plt.plot(ty[:-1],deplacement_quad_moyen_y[:-1],label="deplacement_quad_moyen_y = "+equation_Dy)
         plt.xlabel("Temps");plt.ylabel("Deplacement quadratique moyen")
         plt.xlim(0)
         plt.legend()
@@ -188,11 +200,15 @@ for N,eta in zip(N,eta):
             plt.show()
         else:
             plt.close()
+
         #Coefficient de diffusion
-        D,mean_D,t = routines.Diff_coef(x_sol,dt)
+        Dx,mean_Dx,tx = routines.Diff_coef(x_sol,dt)
+        Dy,mean_Dy,ty = routines.Diff_coef(y_sol,dt)
         plt.figure("Coefficient de diffusion")
-        plt.plot(t,D,label="D")
-        plt.plot(t,mean_D*np.ones(len(t)),label="mean_D")
+        plt.plot(t[:-1],Dx[:-1],label="Dx")
+        plt.plot(t[:-1],mean_Dx*np.ones(len(t))[:-1],label="mean_Dx")
+        plt.plot(ty[:-1],Dy[:-1],label="Dy")
+        plt.plot(ty[:-1],mean_Dy*np.ones(len(ty))[:-1],label="mean_Dy")
         plt.xlabel("Temps");plt.ylabel("Coefficient de diffusion")
         plt.xlim(0)
         plt.legend()
