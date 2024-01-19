@@ -51,20 +51,17 @@ for N,eta in zip(N,eta):
     
     #### Change de répertoire si sauvegarde ####
     if Save == True:
-        current_dir = os.getcwd()
-        os.chdir("Data")
-        if os.path.exists(name):
-            shutil.rmtree(name)
-        os.makedirs(name)
-        os.chdir(name)
+        if os.path.exists('Data/'+name):
+            shutil.rmtree('Data/'+name)
+        os.makedirs('Data/'+name)
         print('==================================')
         print("Sauvegarde dans le dossier : ",name)
     
     ###### Sauvegarde des données #######
     if Save == True:
-        np.savetxt('x_sol_'+name+'.csv',x_sol) #ligne =temps collones=indices particules
-        np.savetxt('y_sol_'+name+'.csv',y_sol)
-        np.savetxt('theta_sol_'+name+'.csv',theta_sol)
+        np.savetxt('Data/'+name+'/'+'x_sol_'+name+'.csv',x_sol) #ligne =temps collones=indices particules
+        np.savetxt('Data/'+name+'/'+'y_sol_'+name+'.csv',y_sol)
+        np.savetxt('Data/'+name+'/'+'theta_sol_'+name+'.csv',theta_sol)
 
     ###### Mise en place de l'annimation #######
     if Animation==True:
@@ -92,7 +89,7 @@ for N,eta in zip(N,eta):
         plt.xlabel("Temps");plt.ylabel("Phi")
         plt.legend()
         if Save == True:
-            plt.savefig("Phi_"+name+".png")
+            plt.savefig('Data/'+name+'/'+"Phi_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
@@ -140,7 +137,7 @@ for N,eta in zip(N,eta):
         plt.xlabel("Temps");plt.ylabel("Deplacement")
         plt.xlim(0)
         if Save == True:
-            plt.savefig("Deplacement_"+name+".png")
+            plt.savefig('Data/'+name+'/'+"Deplacement_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
@@ -156,7 +153,7 @@ for N,eta in zip(N,eta):
         plt.xlabel("Temps");plt.ylabel("Somme vitesse")
         plt.legend()
         if Save == True:
-            plt.savefig("Vitesse_"+name+".png")
+            plt.savefig('Data/'+name+'/'+"Vitesse_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
@@ -172,7 +169,7 @@ for N,eta in zip(N,eta):
         plt.xlim(0)
         plt.legend()
         if Save == True:
-            plt.savefig("barycentre_"+name+".png")
+            plt.savefig('Data/'+name+'/'+"barycentre_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
@@ -195,7 +192,7 @@ for N,eta in zip(N,eta):
         plt.xlim(0)
         plt.legend()
         if Save == True:
-            plt.savefig("Deplacement_quad_moyen_"+name+".png")
+            plt.savefig('Data/'+name+'/'+"Deplacement_quad_moyen_"+name+".png")
         if Show_Analyse == True:
             plt.show()
         else:
@@ -213,12 +210,10 @@ for N,eta in zip(N,eta):
         plt.xlim(0)
         plt.legend()
         if Save == True:
-            plt.savefig("Diffusion_"+name+".png")
+            plt.savefig('Data/'+name+'/'+"Diffusion_"+name+".png")
 
         if Show_Analyse == True:
             plt.show()
         else:
             plt.close()
-    if Save==True:
-        os.chdir(current_dir)
     

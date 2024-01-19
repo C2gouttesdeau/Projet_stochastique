@@ -268,7 +268,7 @@ def AnimationGif(x_sol,y_sol,N,l,Nt,inter,fram,fig,scat,lines,name,Trajectoires,
         scat.set_offsets(np.empty((0, 2)))  # Passer un tableau 2D vide à set_offsets
         return lines + [scat]
     ani = animation.FuncAnimation(fig, anifunc, frames=fram, interval=inter,repeat=True,init_func=init_func)
-    namegif= name +".gif"
+    namegif= 'Data/'+name+'/'+name +".gif"
     print("==================================")
     print("Simulation pour créer un gif animé")  
     if Save==True :
